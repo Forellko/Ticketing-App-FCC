@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
-const TicketForm = () => {
+const TicketForm = ({ ticket }) => {
+  const EDITMODE = !(ticket?._id === 'new');
+
   const router = useRouter();
-  const startingTicketData = {
+  let startingTicketData = {
     title: '',
     description: '',
     priority: 1,
@@ -13,6 +15,10 @@ const TicketForm = () => {
     status: 'not started',
     category: 'Hardware problem',
   };
+
+  if (EDITMODE) {
+    startingTicketData = { ...ticket };
+  }
 
   const [formData, setFormData] = useState(startingTicketData);
 
@@ -28,12 +34,20 @@ const TicketForm = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    const res = await fetch('/api/Tickets', {
-      method: 'POST',
-      body: JSON.stringify({ formData }),
-      'content-type': 'application/json',
-    });
+    let res;
+    if (EDITMODE) {
+      res = await fetch(`/api/Tickets/${ticket._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ formData }),
+        'Content-Type': 'application/json',
+      });
+    } else {
+      res = await fetch('/api/Tickets', {
+        method: 'POST',
+        body: JSON.stringify({ formData }),
+        'Content-Type': 'application/json',
+      });
+    }
 
     if (!res.ok) {
       throw new Error('Failed to create Ticket.');
@@ -50,7 +64,7 @@ const TicketForm = () => {
         method="post"
         onSubmit={handleSubmit}
       >
-        <h3>Create Your Ticket</h3>
+        <h3> {EDITMODE ? 'Edit Your Ticket' : 'Create Your Ticket'}</h3>
         <label htmlFor="">Title</label>
         <input
           type="text"
@@ -148,7 +162,11 @@ const TicketForm = () => {
           <option value="started">Started</option>
           <option value="done">Done</option>
         </select>
-        <input type="submit" className="btn max-w-xs" value="Create Ticket" />
+        <input
+          type="submit"
+          className="btn max-w-xs"
+          value={EDITMODE ? 'Save' : 'Create'}
+        />
       </form>
     </div>
   );
